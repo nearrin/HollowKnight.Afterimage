@@ -50,12 +50,12 @@ public class ImagePool
         else
         {
             newKnight = UnityEngine.Object.Instantiate(knightTemplate);
+            UnityEngine.Object.DontDestroyOnLoad(newKnight);
             activeKnights.Add(newKnight);
         }
         newKnight.transform.position = positon;
         newKnight.transform.rotation = rotation;
         newKnight.transform.localScale = scale;
-        UnityEngine.Object.DontDestroyOnLoad(newKnight);
         newKnight.name = "newKnight";
         return newKnight;
     }
