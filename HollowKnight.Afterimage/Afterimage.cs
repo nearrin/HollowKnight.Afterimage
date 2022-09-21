@@ -3,6 +3,9 @@
 public class Settings
 {
     public bool on = true;
+    public int r = 4;
+    public int g = 2;
+    public int b = 4;
 }
 public class ImageAnimation : MonoBehaviour
 {
@@ -14,6 +17,7 @@ public class ImageAnimation : MonoBehaviour
         var newAnimator = gameObject.GetAddComponent<tk2dSpriteAnimator>();
         newAnimator.Play(clip);
         time += Time.deltaTime;
+        newAnimator.Sprite.color = new Color(Afterimage.afterimage.settings_.r/4.0f, Afterimage.afterimage.settings_.g/ 4.0f, Afterimage.afterimage.settings_.b/ 4.0f, 0.5f*(1 - time / 0.5f));
         if (time > 0.5)
         {
             time = 0;
@@ -39,7 +43,7 @@ public class ImagePool
         {
             newKnight = UnityEngine.Object.Instantiate(knightTemplate);
         }
-        newKnight.transform.position = positon;
+        newKnight.transform.position = new Vector3(positon.x,positon.y,positon.z+1e-3f);
         newKnight.transform.rotation = rotation;
         newKnight.transform.localScale = scale;
         newKnight.name = "newKnight";
@@ -53,10 +57,11 @@ public class ImageGenerator : MonoBehaviour
     void Update()
     {
         time += Time.deltaTime;
-        if (time > 0.1)
+        if (time > 0.1 && Afterimage.afterimage.settings_.on)
         {
             var originalKnight = HeroController.instance.gameObject;
             var newKnight = pool.instantiate(originalKnight.transform.position, originalKnight.transform.rotation, originalKnight.transform.localScale);
+            DontDestroyOnLoad(newKnight);
             try
             {
                 time = 0;
@@ -85,7 +90,7 @@ public class ImageGenerator : MonoBehaviour
 public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
 {
     public static Afterimage afterimage;
-    private Settings settings_ = new();
+    public Settings settings_ = new();
     public bool ToggleButtonInsideMenu => true;
     ImagePool pool = new();
     public Afterimage() : base("Afterimage")
@@ -136,6 +141,51 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
                 },
                 Saver = i => settings_.on = i == 0,
                 Loader = () => settings_.on ? 0 : 1
+            }
+        );
+        menus.Add(
+            new()
+            {
+                Values = new string[]
+                {
+                    "Red=0.00",
+                    "Red=0.25",
+                    "Red=0.50",
+                    "Red=0.75",
+                    "Red=1.00",
+                },
+                Saver = i => settings_.r = i,
+                Loader = () => settings_.r
+            }
+        );
+        menus.Add(
+            new()
+            {
+                Values = new string[]
+                {
+                    "Green=0.00",
+                    "Green=0.25",
+                    "Green=0.50",
+                    "Green=0.75",
+                    "Green=1.00",
+                },
+                Saver = i => settings_.g = i,
+                Loader = () => settings_.g
+            }
+        );
+        menus.Add(
+            new()
+            {
+                Values = new string[]
+                {
+                    "Blue=0.00",
+                    "Blue=0.25",
+                    "Blue=0.50",
+                    "Blue=0.75",
+                    "Blue=1.00",
+                },
+                Saver = i => settings_.b = i,
+                Loader = () => settings_.b
             }
         );
         return menus;
