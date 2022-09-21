@@ -16,12 +16,25 @@ public class Animation:MonoBehaviour
         }
     }
 }
+public class Pool
+{
+    public GameObject knightTemplate;
+    List<GameObject> activeKnights = new List<GameObject>();
+    List<GameObject> inactiveKnights = new List<GameObject>();
+    public GameObject instantiate(Vector3 positon,Quaternion rotation,Vector3 scale)
+    {
+        var newKnight = UnityEngine.Object.Instantiate(knightTemplate, positon, rotation);
+        newKnight.transform.localScale = scale;
+        UnityEngine.Object.DontDestroyOnLoad(newKnight);
+        newKnight.name = "newKnight";
+        return newKnight;
+    }
+}
 public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
 {
     private Settings settings_ = new();
     public bool ToggleButtonInsideMenu => true;
-    GameObject knightTemplate = null;
-    List<GameObject> knightPool=new List<GameObject>();
+    Pool pool = new();
     public Afterimage() : base("Afterimage")
     {
     }
@@ -43,10 +56,7 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
             LogDebug("Creating a new instance.");
             var originalKnight = HeroController.instance.gameObject;
             var originalAnimator = originalKnight.GetComponent<tk2dSpriteAnimator>();
-            var newKnight = UnityEngine.Object.Instantiate(knightTemplate,originalKnight.transform.position,originalKnight.transform.rotation);
-            newKnight.transform.localScale = originalKnight.transform.localScale;
-            UnityEngine.Object.DontDestroyOnLoad(newKnight);
-            newKnight.name = "newKnight";
+            var newKnight = pool.instantiate(originalKnight.transform.position, originalKnight.transform.rotation, originalKnight.transform.localScale);
             var newAnimator = newKnight.GetAddComponent<tk2dSpriteAnimator>();
             newAnimator.SetSprite(originalAnimator.Sprite.Collection, originalAnimator.Sprite.spriteId);
             newAnimator.Library=originalAnimator.Library;
@@ -57,6 +67,7 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
             newClip.frames[0] = originalClip.frames[originalAnimator.CurrentFrame];
             newClip.wrapMode = tk2dSpriteAnimationClip.WrapMode.Once;
             newKnight.GetAddComponent<Animation>().clip = newClip;
+            newAnimator.enabled = false;
         }
     }
     public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
@@ -64,7 +75,7 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
         UnityEngine.SceneManagement.SceneManager.activeSceneChanged += ActiveSceneChanged;
         ModHooks.HeroUpdateHook += HeroUpdateHook;
         var battleControl = preloadedObjects["GG_Mighty_Zote"]["Battle Control"];
-        knightTemplate = battleControl.transform.Find("Zotelings").gameObject.transform.Find("Ordeal Zoteling").gameObject;
+        var knightTemplate = battleControl.transform.Find("Zotelings").gameObject.transform.Find("Ordeal Zoteling").gameObject;
         UnityEngine.Object.Destroy(knightTemplate.GetComponent<PersistentBoolItem>());
         UnityEngine.Object.Destroy(knightTemplate.GetComponent<ConstrainPosition>());
         knightTemplate.RemoveComponent<HealthManager>();
@@ -72,6 +83,7 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
         knightTemplate.RemoveComponent<UnityEngine.BoxCollider2D>();
         knightTemplate.RemoveComponent<PlayMakerFSM>();
         knightTemplate.RemoveComponent<PlayMakerFSM>();
+        pool.knightTemplate = knightTemplate;
     }
     public void OnLoadGlobal(Settings settings) => settings_ = settings;
     public Settings OnSaveGlobal() => settings_;
