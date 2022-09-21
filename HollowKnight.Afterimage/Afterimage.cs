@@ -7,6 +7,7 @@ public class Settings
 public class ImageAnimation : MonoBehaviour
 {
     public tk2dSpriteAnimationClip clip;
+    public ImagePool pool;
     float time;
     void Update()
     {
@@ -17,29 +18,16 @@ public class ImageAnimation : MonoBehaviour
         {
             time = 0;
             gameObject.SetActive(false);
+            pool.inactiveKnights.Add(gameObject);
         }
     }
 }
 public class ImagePool
 {
     public GameObject knightTemplate;
-    List<GameObject> activeKnights = new List<GameObject>();
-    List<GameObject> inactiveKnights = new List<GameObject>();
+    public List<GameObject> inactiveKnights = new List<GameObject>();
     public GameObject instantiate(Vector3 positon, Quaternion rotation, Vector3 scale)
     {
-        List<GameObject> stillActive = new List<GameObject>();
-        foreach (var knight in activeKnights)
-        {
-            if (!knight.activeSelf)
-            {
-                inactiveKnights.Add(knight);
-            }
-            else
-            {
-                stillActive.Add(knight);
-            }
-        }
-        activeKnights = stillActive;
         GameObject newKnight = null;
         if (inactiveKnights.Count != 0)
         {
@@ -50,8 +38,6 @@ public class ImagePool
         else
         {
             newKnight = UnityEngine.Object.Instantiate(knightTemplate);
-            UnityEngine.Object.DontDestroyOnLoad(newKnight);
-            activeKnights.Add(newKnight);
         }
         newKnight.transform.position = positon;
         newKnight.transform.rotation = rotation;
@@ -69,26 +55,36 @@ public class ImageGenerator : MonoBehaviour
         time += Time.deltaTime;
         if (time > 0.1)
         {
-            time = 0;
             var originalKnight = HeroController.instance.gameObject;
-            var originalAnimator = originalKnight.GetComponent<tk2dSpriteAnimator>();
             var newKnight = pool.instantiate(originalKnight.transform.position, originalKnight.transform.rotation, originalKnight.transform.localScale);
-            var newAnimator = newKnight.GetAddComponent<tk2dSpriteAnimator>();
-            newAnimator.SetSprite(originalAnimator.Sprite.Collection, originalAnimator.Sprite.spriteId);
-            newAnimator.Library = originalAnimator.Library;
-            var originalClip = originalAnimator.CurrentClip;
-            var newClip = new tk2dSpriteAnimationClip();
-            newClip.CopyFrom(originalClip);
-            newClip.frames = new tk2dSpriteAnimationFrame[1];
-            newClip.frames[0] = originalClip.frames[originalAnimator.CurrentFrame];
-            newClip.wrapMode = tk2dSpriteAnimationClip.WrapMode.Once;
-            newKnight.GetAddComponent<ImageAnimation>().clip = newClip;
-            newAnimator.enabled = false;
+            try
+            {
+                time = 0;
+                var originalAnimator = originalKnight.GetComponent<tk2dSpriteAnimator>();
+                var newAnimator = newKnight.GetAddComponent<tk2dSpriteAnimator>();
+                newAnimator.SetSprite(originalAnimator.Sprite.Collection, originalAnimator.Sprite.spriteId);
+                newAnimator.Library = originalAnimator.Library;
+                var originalClip = originalAnimator.CurrentClip;
+                var newClip = new tk2dSpriteAnimationClip();
+                newClip.CopyFrom(originalClip);
+                newClip.frames = new tk2dSpriteAnimationFrame[1];
+                newClip.frames[0] = originalClip.frames[originalAnimator.CurrentFrame];
+                newClip.wrapMode = tk2dSpriteAnimationClip.WrapMode.Once;
+                var imageAnimation = newKnight.GetAddComponent<ImageAnimation>();
+                imageAnimation.clip = newClip;
+                imageAnimation.pool = pool;
+                newAnimator.enabled = false;
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Object.Destroy(newKnight);
+            }
         }
     }
 }
 public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
 {
+    public static Afterimage afterimage;
     private Settings settings_ = new();
     public bool ToggleButtonInsideMenu => true;
     ImagePool pool = new();
@@ -112,6 +108,7 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
     }
     public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
     {
+        afterimage = this;
         ModHooks.HeroUpdateHook += HeroUpdateHook;
         var battleControl = preloadedObjects["GG_Mighty_Zote"]["Battle Control"];
         var knightTemplate = battleControl.transform.Find("Zotelings").gameObject.transform.Find("Ordeal Zoteling").gameObject;
