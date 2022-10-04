@@ -24,6 +24,7 @@ public class ImageAnimation : MonoBehaviour
             gameObject.SetActive(false);
             pool.inactiveKnights.Add(gameObject);
         }
+        gameObject.tag = "Untagged";
     }
 }
 public class ImagePool
@@ -47,6 +48,7 @@ public class ImagePool
         newKnight.transform.rotation = rotation;
         newKnight.transform.localScale = scale;
         newKnight.name = "newKnight";
+        newKnight.tag = "Untagged";
         return newKnight;
     }
 }
@@ -96,7 +98,7 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
     public Afterimage() : base("Afterimage")
     {
     }
-    public override string GetVersion() => "1.0.0.0";
+    public override string GetVersion() => "1.1.0.0";
     public override List<(string, string)> GetPreloadNames()
     {
         return new List<(string, string)>
@@ -124,6 +126,16 @@ public class Afterimage : Mod, IGlobalSettings<Settings>, IMenuMod
         knightTemplate.RemoveComponent<UnityEngine.BoxCollider2D>();
         knightTemplate.RemoveComponent<PlayMakerFSM>();
         knightTemplate.RemoveComponent<PlayMakerFSM>();
+        knightTemplate.RemoveComponent<PlayMakerFixedUpdate>();
+        knightTemplate.RemoveComponent<UnityEngine.AudioSource>();
+        knightTemplate.RemoveComponent<SpriteFlash>();
+        knightTemplate.RemoveComponent<PersonalObjectPool>();
+        knightTemplate.RemoveComponent<Recoil>();
+        knightTemplate.RemoveComponent<EnemyDreamnailReaction>();
+        knightTemplate.RemoveComponent<EnemyDeathEffectsUninfected>();
+        knightTemplate.RemoveComponent<EnemyHitEffectsUninfected>();
+        knightTemplate.RemoveComponent<ExtraDamageable>();
+        knightTemplate.tag = "Untagged";
         pool.knightTemplate = knightTemplate;
     }
     public void OnLoadGlobal(Settings settings) => settings_ = settings;
